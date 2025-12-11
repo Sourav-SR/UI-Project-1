@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Great Pirate Era</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.0/vanilla-tilt.min.js"></script>
+
+    <style>
+        :root {
+            --paper-color: #f4e4bc;
+            --ink-color: #1a1a1a;
+            --accent-red: #8b0000;
+            --pirate-gold: #daa520;
+            --font-title: 'Bangers', cursive;
+            --font-hand: 'Permanent Marker', cursive;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            color: var(--ink-color);
+            font-family: 'Roboto', sans-serif;
+            overflow-x: hidden;
+            background-color: #2c2c2c;
+        }
+
+        /* --- BACKGROUNDS --- */
+        #world-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: url('https://imgs.search.brave.com/VGEECt88O9qBTMsZO83pkKkcg1COE71SY39GPKEIVmQ/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly93YWxs/cGFwZXJhY2Nlc3Mu/Y29tL2Z1bGwvOTM4/NzI0My5qcGc') no-repeat center center;
+            background-size: cover;
+            z-index: -10;
+            filter: brightness(0.7) contrast(1.1);
+            transform: scale(1.1); 
+        }
+        
+        #texture-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url('https://www.transparenttextures.com/patterns/old-paper.png');
+            opacity: 0.4;
+            z-index: -5;
+            pointer-events: none;
+        }
+
+        /* --- FIXED UI CORNERS --- */
+        .fixed-ui {
+            position: fixed; 
+            z-index: 10000; 
+            border-radius: 50%;
+            object-fit: cover;
+            mix-blend-mode: hard-light;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        /* Log Pose */
+        #log-pose {
+            top: 25px;
+            left: 25px;
+            width: 110px;  /* Resized back to normal */
+            height: 110px;
+        }
+        #log-pose:hover {
+            animation: wobble 1s ease-in-out infinite;
+            filter: brightness(1.2);
+        }
+
+        /* Compass */
+        #compass {
+            top: 25px;
+            right: 25px;
+            width: 110px; 
+            height: 110px;
+        }
+        #compass:hover {
+            transform: rotate(360deg);
+            transition: transform 1.5s ease-in-out;
+            filter: brightness(1.2);
+        }
+
+        /* --- LOADING SCREEN --- */
+        #loader {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100vh;
+            background: url('https://imgs.search.brave.com/nKu8wM2rFMxamWIwuJIL2ACxpdnrw5MRwEL7VUSfnyQ/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly93YWxs/cGFwZXJjYXZlLmNv/bS93cC93cDExNzk2/NDIwLmpwZw') no-repeat center center;
+            background-size: cover;
+            z-index: 20000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            transition: opacity 1s ease;
+        }
+        
+        #loader::before {
+            content: ''; position: absolute; top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.6); z-index: -1;
+        }
+
+        .loader-spinner {
+            width: 60px;
+            height: 60px;
+            border: 8px solid rgba(255,255,255,0.3);
+            border-top: 8px solid var(--pirate-gold);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        .loader-text {
+            font-family: var(--font-title);
+            font-size: 3rem;
+            letter-spacing: 5px;
+            text-shadow: 2px 2px 0 #000;
+            animation: pulse 1.5s infinite;
+        }
+
+        /* --- HERO SECTION --- */
+        #hero {
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+            text-align: center;
+        }
+        
+        .hero-content { z-index: 10; }
+
+        h1 {
+            font-family: var(--font-title);
+            font-size: clamp(5rem, 15vw, 12rem);
+            color: white;
+            text-shadow: 6px 6px 0px #000, -2px -2px 0 var(--accent-red);
+            letter-spacing: 5px;
+            line-height: 0.9;
+        }
+
+        .subtitle {
+            font-family: var(--font-hand);
+            font-size: 2.5rem;
+            color: var(--pirate-gold);
+            text-shadow: 3px 3px 5px #000;
+            background: rgba(0,0,0,0.4);
+            padding: 10px 20px;
+            border-radius: 10px;
+            display: inline-block;
+        }
+
+        /* --- WANTED POSTERS (FULL IMAGE MODE) --- */
+        #bounties { padding: 100px 20px; }
+        .section-title {
+            font-family: var(--font-title);
+            text-align: center;
+            font-size: 4rem;
+            color: white;
+            text-shadow: 4px 4px 0 #000;
+            margin-bottom: 60px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+        .bounty-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 60px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        /* Poster Container */
+        .poster {
+            width: 300px;
+            height: 440px; 
+            position: relative;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            cursor: pointer;
+            transform-style: preserve-3d;
+            border-radius: 5px;
+            overflow: hidden;
+            background: #2b2b2b; 
+        }
+
+        .poster-full-img {
+            width: 100%;
+            height: 100%;
+            object-fit: fill; 
+        }
+
+        /* --- VISITED PLACES --- */
+        #log-pose-section { padding: 100px 20px; }
+        .island-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 80px;
+            gap: 40px;
+        }
+        
+        .anchor-icon {
+            font-size: 5rem; 
+            color: white; 
+            text-shadow: 0 0 10px black;
+            animation: swing 3s infinite ease-in-out;
+            opacity: 0.9;
+        }
+
+        .island-card {
+            width: 700px;
+            height: 350px;
+            border: 8px solid #fff;
+            box-shadow: 15px 15px 0px rgba(0,0,0,0.8);
+            cursor: pointer;
+            transition: 0.3s;
+            position: relative;
+            overflow: hidden;
+            border-radius: 4px;
+            background-color: #000;
+        }
+        
+        .island-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+            opacity: 0.7;
+        }
+
+        .island-text {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+            text-align: center;
+            color: white;
+            width: 100%;
+        }
+        .island-text h3 {
+            font-family: var(--font-title);
+            font-size: 4rem;
+            text-shadow: 4px 4px 0 #000;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        .island-text p {
+            font-family: var(--font-hand);
+            font-size: 1.5rem;
+            color: var(--pirate-gold);
+            text-shadow: 2px 2px 2px #000;
+        }
+        .island-card:hover img { transform: scale(1.1); opacity: 0.4; }
+        .island-card:hover { border-color: var(--pirate-gold); box-shadow: 15px 15px 0px var(--accent-red); }
+
+        /* --- ENDING --- */
+        #ending {
+            height: 60vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        
+        .manga-bubble {
+            background: white;
+            color: black;
+            padding: 40px 60px;
+            border-radius: 50%;
+            border: 6px solid black;
+            font-family: var(--font-hand);
+            font-size: 3rem;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.2);
+            position: relative;
+            max-width: 80%;
+        }
+
+        .manga-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -30px; 
+            right: 40%;
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 0px solid transparent;
+            border-top: 40px solid black;
+            transform: rotate(-10deg);
+        }
+        .manga-bubble::before {
+            content: '';
+            position: absolute;
+            bottom: -20px; 
+            right: 40.5%;
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 0px solid transparent;
+            border-top: 35px solid white;
+            transform: rotate(-10deg);
+            z-index: 1;
+        }
+
+        /* --- FOOTER --- */
+        footer {
+            background: linear-gradient(to top, rgba(0,0,0,1), rgba(0,0,0,0.8), transparent);
+            color: #f0f0f0;
+            padding: 80px 20px;
+            font-family: 'Roboto', sans-serif;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .footer-content {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(5px);
+            padding: 40px;
+            border-top: 3px solid var(--pirate-gold);
+            border-bottom: 3px solid var(--pirate-gold);
+        }
+
+        .footer-links {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+        .footer-links li a {
+            color: white;
+            text-decoration: none;
+            font-size: 1.3rem;
+            transition: 0.3s;
+            text-transform: uppercase;
+            font-family: var(--font-title);
+            letter-spacing: 1px;
+        }
+        .footer-links li a:hover { color: var(--pirate-gold); }
+
+        /* --- MODAL --- */
+        #island-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #fffbf0;
+            z-index: 30000;
+            transform: translateY(100%);
+            transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            display: flex;
+            flex-direction: column;
+        }
+        #island-modal.active { transform: translateY(0); }
+        .modal-header { height: 45vh; background-size: cover; background-position: center; position: relative; border-bottom: 5px solid black; }
+        .close-btn { 
+            position: absolute; top: 20px; right: 20px; 
+            background: #cc0000; color: white; width: 50px; height: 50px; 
+            border-radius: 50%; font-weight: bold; cursor: pointer; font-size: 1.5rem;
+            display: grid; place-items: center; border: 3px solid white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            z-index: 5;
+        }
+        .modal-body { padding: 50px; overflow-y: auto; text-align: center; background-image: url('https://www.transparenttextures.com/patterns/old-paper.png'); }
+        
+        .modal-action-btn {
+            background: #1a1a1a; 
+            color: white; border: none;
+            padding: 15px 40px; font-family: var(--font-title); font-size: 2rem;
+            margin-top: 30px; cursor: pointer; transform: skew(-10deg);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            border: 2px solid white;
+            box-shadow: 5px 5px 0px #888;
+        }
+        .modal-action-btn:hover {
+            transform: skew(-10deg) scale(1.1);
+            background: var(--accent-red);
+            box-shadow: 10px 10px 0px black;
+            color: gold;
+        }
+
+        .action-popup {
+            position: absolute; font-family: var(--font-title);
+            font-size: 6rem; color: #ff0000; -webkit-text-stroke: 3px black;
+            pointer-events: none; z-index: 30005; font-weight: 900;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
+        @keyframes swing { 0% { transform: rotate(10deg); } 50% { transform: rotate(-10deg); } 100% { transform: rotate(10deg); } }
+        @keyframes wobble { 0% { transform: rotate(0deg); } 25% { transform: rotate(-15deg); } 75% { transform: rotate(15deg); } 100% { transform: rotate(0deg); } }
+
+        @media (max-width: 768px) {
+            #log-pose { width: 80px; height: 80px; }
+            #compass { width: 80px; height: 80px; }
+            .poster { width: 260px; height: 380px; }
+            .island-card { width: 100%; height: 250px; }
+            .island-row { flex-direction: column; gap: 20px; }
+            h1 { font-size: 5rem; }
+            .manga-bubble { font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Backgrounds -->
+    <div id="world-bg"></div>
+    <div id="texture-overlay"></div>
+
+    <!-- UI -->
+    <img id="log-pose" class="fixed-ui" src="https://i.pinimg.com/736x/3f/76/49/3f764990893113f871342706e8a1a030.jpg" alt="Log Pose">
+    <img id="compass" class="fixed-ui" src="https://i.pinimg.com/1200x/bf/a9/cd/bfa9cd737c72fbbb3b81b3d5bc34cf6f.jpg" alt="Compass">
+
+    <!-- Loading Screen -->
+    <div id="loader">
+        <div class="loader-spinner"></div>
+        <h2 class="loader-text">LOADING...</h2>
+    </div>
+
+    <!-- Island Modal -->
+    <div id="island-modal">
+        <div class="modal-header" id="modal-img-bg">
+            <div class="close-btn" onclick="closeModal()">X</div>
+        </div>
+        <div class="modal-body">
+            <h1 id="modal-title" style="font-family:var(--font-title); font-size:4rem; text-transform:uppercase;"></h1>
+            <hr style="width: 100px; margin: 20px auto; border: 2px solid black;">
+            <p id="modal-desc" style="font-size:1.4rem; max-width:800px; margin: 20px auto; line-height: 1.6; font-weight: 500;"></p>
+            <button id="modal-btn" class="modal-action-btn" onclick="doAction()">INTERACT</button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div id="app" style="opacity: 0; transition: 1s;">
+        
+        <!-- Hero -->
+        <section id="hero">
+            <div class="hero-content">
+                <h1>ONE PIECE</h1>
+                <div class="subtitle">The Great Pirate Era</div>
+            </div>
+        </section>
+
+        <!-- Wanted Posters -->
+        <section id="bounties">
+            <h2 class="section-title">Most Wanted</h2>
+            <div class="bounty-grid" id="poster-grid">
+                <!-- Injected via JS -->
+            </div>
+        </section>
+
+        <!-- Islands -->
+        <section id="log-pose-section">
+            <h2 class="section-title">Log Pose Records</h2>
+            <div id="island-list">
+                <!-- Injected via JS -->
+            </div>
+        </section>
+
+        <!-- Ending -->
+        <section id="ending">
+            <div class="manga-bubble" id="manga-text">
+                THE ONE PIECE...<br><span style="color:red; font-weight:bold;">IS REAL!!!</span>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer>
+            <div class="footer-content">
+                <h3 style="font-family: var(--font-title); font-size: 2.5rem; color: var(--pirate-gold);">Straw Hat Grand Fleet</h3>
+                
+                <ul class="footer-links">
+                    <li><a href="https://one-piece.com/op/links_eng/" target="_blank">About Us</a></li>
+                    <li><a href="#">Bounties</a></li>
+                    <li><a href="#">Report Marine</a></li>
+                    <li><a href="#">Join Crew</a></li>
+                </ul>
+
+                <div class="funny-contact" style="font-family: var(--font-hand); color: #ccc; margin-top: 20px;">
+                    <p>🐌 <strong>Den Den Mushi:</strong> *purupurupuru* ... *gatcha*</p>
+                    <p>📍 <strong>Location:</strong> Laugh Tale (Maybe?)</p>
+                </div>
+                
+                <div style="margin-top: 30px; font-size: 0.9rem; opacity: 0.7;">
+                    &copy; 2025 Fan Project.
+                </div>
+            </div>
+        </footer>
+
+    </div>
+
+    <script>
+        // --- DATA WITH SPECIFIC DIALOGUES ---
+        const pirates = [
+            { name: "Monkey D. Luffy", quote: "Gomu Gomu Nooo!!", img: "https://i.pinimg.com/736x/31/61/a0/3161a00b8833bbf5c77e0801722342cc.jpg" },
+            { name: "Roronoa Zoro", quote: "ONIGIRI!!", img: "https://i.pinimg.com/736x/bf/30/bd/bf30bdc3f1a4c1879b130a214263f96d.jpg" },
+            { name: "Nami", quote: "Sanji kun!", img: "https://i.pinimg.com/1200x/41/1e/db/411edbfc18652a25e56271b3c0120e46.jpg" },
+            { name: "God Usopp", quote: "AHHHH!!!", img: "https://i.pinimg.com/1200x/12/c2/ee/12c2ee6684a8e981cad98c3092374a24.jpg" },
+            { name: "Vinsmoke Sanji", quote: "Nami Swaaaann!!!", img: "https://i.pinimg.com/736x/f6/83/b4/f683b46813e702114854aaa1d50cea71.jpg" },
+            { name: "Nico Robin", quote: "Cien Fleur!", img: "https://i.pinimg.com/736x/de/56/84/de5684a6d3b7883d2fd6a2a6a57b03d6.jpg" },
+            { name: "Tony Tony Chopper", quote: "Wataame!!", img: "https://i.pinimg.com/736x/49/21/8d/49218d1d169c358d86057a9fc1d9fb76.jpg" },
+            { name: "Franky", quote: "Suuuupperrrrr!", img: "https://i.pinimg.com/736x/0d/4f/5e/0d4f5eff932be2089300cb2bdef95e82.jpg" },
+            { name: "Brook", quote: "Yohohohoho!", img: "https://i.pinimg.com/736x/dc/ff/c2/dcffc2c29333e2a58b800c661c57ab4b.jpg" },
+            { name: "Jinbe", quote: "Same arashi!!", img: "https://i.pinimg.com/736x/f7/5f/2b/f75f2b4254bfeb79ee7fe7548e04c147.jpg" },
+
+            // Legends & Others
+            { name: "Gol D. Roger", quote: "Kamusari!", img: "https://i.pinimg.com/1200x/60/5a/8b/605a8b497ad524702ea37014c5809670.jpg" },
+            { name: "Edward Newgate", quote: "Gurararara!", img: "https://i.pinimg.com/736x/ee/80/ee/ee80ee07b9dfcc221c0a8e077ba6f71e.jpg" },
+            { name: "Kaido", quote: "Raime Haken!", img: "https://i.pinimg.com/736x/b2/8e/09/b28e09f6288b90065acc88e9e0487a3d.jpg" },
+            { name: "Big Mom", quote: "Mama! Mama!", img: "https://i.pinimg.com/736x/d4/8c/60/d48c60c1c76c79e8b6ec91ff8a7212b3.jpg" },
+            { name: "Shanks", quote: "Kamusari!!!", img: "https://i.pinimg.com/736x/90/b4/5e/90b45e412e76391490b492c8131433b2.jpg" },
+            { name: "Monkey D. Dragon", quote: "Sabo!", img: "https://i.pinimg.com/1200x/bd/e9/cb/bde9cb3d86d80ab90bd30639f91f9d17.jpg" },
+            { name: "Dracule Mihawk", quote: "Mikoto!", img: "https://i.pinimg.com/1200x/70/7a/11/707a117d08e37761e11529932ced2eb3.jpg" },
+            { name: "Buggy The Clown", quote: "Buggy Balls!!!", img: "https://i.pinimg.com/736x/77/4d/20/774d2018b08b5993bffd5097c2987c54.jpg" },
+            { name: "Trafalgar Law", quote: "Rooom!", img: "https://i.pinimg.com/1200x/d3/a4/ba/d3a4ba5ce53fe04a7178fb506a00c7ba.jpg" },
+            { name: "Eustass Kid", quote: "EheheH!", img: "https://i.pinimg.com/1200x/ed/c8/40/edc840d980b61ec8f7164a263a0d8928.jpg" },
+            { name: "Sir Crocodile", quote: "Hisashi buri dhanaaa!", img: "https://i.pinimg.com/736x/46/68/fe/4668feed6acbab1a03cd728e3ad54f7e.jpg" },
+            { name: "Boa Hancock", quote: "Perfume Femur!!", img: "https://i.pinimg.com/1200x/12/fa/a2/12faa2e20afb18116b829b27ed02cd9b.jpg" },
+            { name: "Portgas D. Ace", quote: "Hikkenn!!", img: "https://i.pinimg.com/736x/21/6e/af/216eafbfc31fcee4776cebcbfb7858cb.jpg" },
+            { name: "Donquixote Doflamingo", quote: "Lawwww!!!", img: "https://i.pinimg.com/736x/b7/5d/1c/b75d1c5bf42e32b420ae4fa69c13e234.jpg" },
+        ];
+
+        const locations = [
+            { 
+                id: 'alabasta', 
+                name: "Alabasta Kingdom", 
+                img: "https://i.pinimg.com/1200x/7e/bb/27/7ebb27350db28822c74675ebe5c464a1.jpg", 
+                desc: "A desert island in the Grand Line. The Straw Hats fought desperately here to save Princess Vivi and stop a bomb from destroying the capital. Hidden beneath lies the Poneglyph for Pluton.", 
+                action: "DESERT SPADA!" 
+            },
+            { 
+                id: 'skypiea', 
+                name: "Skypiea", 
+                img: "https://i.pinimg.com/736x/12/ca/ef/12caef435af1eeb7bd930cddb9ecae63.jpg", 
+                desc: "A legendary island floating 10,000 meters above sea level. Luffy rang the Golden Bell of Shandora, proving the City of Gold was in the sky all along.", 
+                action: "EL THOR!" 
+            },
+            { 
+                id: 'water7', 
+                name: "Water 7", 
+                img: "https://i.pinimg.com/1200x/27/d6/33/27d63384596428116680493bce9598e5.jpg", 
+                desc: "The Metropolis of Water. A beautiful city built on top of a sunken foundation, famous for its Galley-La shipwrights who built the Thousand Sunny.", 
+                action: "COUP DE BURST!" 
+            },
+            { 
+                id: 'wholecake', 
+                name: "Whole Cake Island", 
+                img: "https://i.pinimg.com/1200x/4e/7f/fe/4e7ffedb4bc2cc6d3480fff4c25c6f02.jpg", 
+                desc: "The headquarters of Big Mom. A fairy-tale land made of sweets, but with a dark twist. Luffy fought Katakuri here in the Mirror World.", 
+                action: "WEDDING CAKE!!!" 
+            },
+            { 
+                id: 'wano', 
+                name: "Land of Wano", 
+                img: "https://i.pinimg.com/1200x/52/1b/dc/521bdce52b883ead8daba22871d33e74.jpg", 
+                desc: "An isolationist country of samurai. This is where the Great Pirate Alliance raided Onigashima to take down Kaido. Luffy awakened Gear 5 here.", 
+                action: "GOMU GOMU NO... BAJRANG GUN!" 
+            }
+        ];
+
+        let currentActionTxt = "";
+
+        // --- LOGIC ---
+
+        function startLoading() {
+            setTimeout(() => {
+                const loader = document.getElementById('loader');
+                loader.style.opacity = '0';
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                    document.getElementById('app').style.opacity = '1';
+                    initAnimations();
+                }, 1000);
+            }, 2500); 
+        }
+
+        function render() {
+            // Render Posters (RAW IMAGE MODE)
+            const grid = document.getElementById('poster-grid');
+            pirates.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'poster';
+                // Simply insert the full image
+                card.innerHTML = `<img src="${p.img}" alt="${p.name}" class="poster-full-img" loading="lazy">`;
+                
+                VanillaTilt.init(card, { max: 15, speed: 400, glare: true, "max-glare": 0.3 });
+
+                // ON CLICK - Character Dialogue (Fixed Position on Body)
+                card.onclick = () => {
+                    // Get position of the clicked card to trigger the pop-up near it
+                    const rect = card.getBoundingClientRect();
+                    const centerX = rect.left + rect.width / 2;
+                    const centerY = rect.top + rect.height / 2;
+
+                    const fx = document.createElement('div');
+                    fx.innerText = p.quote; 
+                    
+                    // Style it fixed to the screen so it floats over everything
+                    fx.style.position = 'fixed';
+                    fx.style.left = centerX + 'px';
+                    fx.style.top = centerY + 'px';
+                    fx.style.transform = 'translate(-50%, -50%) rotate(-15deg)';
+                    
+                    // Styling for the Shout
+                    fx.style.fontSize = '4rem';
+                    fx.style.fontFamily = 'Bangers';
+                    fx.style.color = '#ffeb3b'; // Yellow Text
+                    fx.style.textShadow = '4px 4px 0 #d32f2f'; // Red Shadow
+                    fx.style.webkitTextStroke = '2px black';
+                    fx.style.whiteSpace = 'nowrap'; // Keep on one line usually
+                    fx.style.pointerEvents = 'none';
+                    fx.style.zIndex = '99999'; // On top of absolutely everything
+                    fx.style.opacity = '0';
+                    
+                    document.body.appendChild(fx); // Append to BODY, not card
+                    
+                    // Pop Animation
+                    gsap.fromTo(fx, 
+                        { scale: 0, opacity: 0, rotation: -45 },
+                        { scale: 1.2, opacity: 1, rotation: -15, duration: 0.4, ease: "back.out(2)", onComplete: () => {
+                             gsap.to(fx, { opacity: 0, y: -50, duration: 0.5, delay: 0.5, onComplete: () => fx.remove() });
+                        }}
+                    );
+                };
+                grid.appendChild(card);
+            });
+
+            // Render Islands
+            const list = document.getElementById('island-list');
+            locations.forEach((loc, index) => {
+                const row = document.createElement('div');
+                row.className = 'island-row';
+                const anchor = `<div class="anchor-icon">⚓</div>`;
+                const card = `
+                    <div class="island-card" onclick="openModal('${loc.id}')">
+                        <img src="${loc.img}" alt="${loc.name}" loading="lazy">
+                        <div class="island-text">
+                            <h3>${loc.name}</h3>
+                            <p>Set Sail</p>
+                        </div>
+                    </div>
+                `;
+                row.innerHTML = index % 2 === 0 ? card + anchor : anchor + card;
+                list.appendChild(row);
+            });
+        }
+
+        function initAnimations() {
+            gsap.registerPlugin(ScrollTrigger);
+            
+            // Map Parallax
+            gsap.to("#world-bg", {
+                scrollTrigger: { trigger: "body", start: "top top", end: "bottom bottom", scrub: 1 },
+                y: -150
+            });
+
+            // Stagger Posters
+            gsap.from(".poster", {
+                scrollTrigger: { trigger: "#bounties", start: "top 70%" },
+                y: 100, opacity: 0, stagger: 0.05, duration: 0.8, ease: "back.out(1.5)"
+            });
+
+            // Reveal Islands
+            document.querySelectorAll('.island-row').forEach((row, i) => {
+                gsap.from(row, {
+                    scrollTrigger: { trigger: row, start: "top 80%" },
+                    x: i % 2 === 0 ? -100 : 100, opacity: 0, duration: 1, ease: "power3.out"
+                });
+            });
+
+            // Speech Bubble Pop
+            gsap.from("#manga-text", {
+                scrollTrigger: { trigger: "#ending", start: "center 75%" },
+                scale: 0, duration: 0.6, ease: "elastic.out(1, 0.5)"
+            });
+        }
+
+        // Modal Functions
+        function openModal(id) {
+            const loc = locations.find(l => l.id === id);
+            currentActionTxt = loc.action;
+            document.getElementById('modal-img-bg').style.backgroundImage = `url('${loc.img}')`;
+            document.getElementById('modal-title').innerText = loc.name;
+            document.getElementById('modal-desc').innerText = loc.desc;
+            document.getElementById('island-modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('island-modal').classList.remove('active');
+            document.querySelectorAll('.action-popup').forEach(e => e.remove());
+        }
+
+        function doAction() {
+            const txt = document.createElement('div');
+            txt.className = 'action-popup';
+            txt.innerText = currentActionTxt;
+            txt.style.left = Math.random() * 40 + 30 + '%';
+            txt.style.top = Math.random() * 40 + 30 + '%';
+            document.querySelector('.modal-body').appendChild(txt);
+            
+            gsap.fromTo(txt, 
+                { scale: 0, rotation: -20, opacity: 0 }, 
+                { scale: 1.2, rotation: 0, opacity: 1, duration: 0.4, ease: "elastic.out(1, 0.5)", onComplete: () => {
+                    gsap.to(txt, { opacity: 0, scale: 2, duration: 0.3, delay: 0.5, onComplete: () => txt.remove() })
+                }}
+            );
+            gsap.to(".modal-body", { x: -5, y: 5, duration: 0.05, repeat: 5, yoyo: true });
+        }
+
+        // Initialize
+        render();
+        window.onload = startLoading;
+
+    </script>
+</body>
+</html>
